@@ -1,3 +1,5 @@
 # ignores all files, then 'unignores' files with an extension
 *
 !*.*
+
+enunciado1.md
