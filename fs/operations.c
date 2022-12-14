@@ -146,8 +146,16 @@ int tfs_link(char const *target, char const *link_name) {
     (void)link_name;
     // ^ this is a trick to keep the compiler from complaining about unused
     // variables. TODO: remove
+    inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
+    ALWAYS_ASSERT(root_dir_inode != NULL,
+                  "tfs_link: root dir inode must exist");
+    int inum = tfs_lookup(target, root_dir_inode);
 
-    PANIC("TODO: tfs_link");
+    if (add_dir_entry(root_dir_inode, link_name + 1, inum) == -1) {
+        return -1; // no space in directory
+    }
+
+    return 0;
 }
 
 int tfs_close(int fhandle) {
@@ -234,11 +242,14 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
 }
 
 int tfs_unlink(char const *target) {
-    (void)target;
-    // ^ this is a trick to keep the compiler from complaining about unused
-    // variables. TODO: remove
+    inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
+    ALWAYS_ASSERT(root_dir_inode != NULL,
+                  "tfs_unlink: root dir inode must exist");
+    target++;
+    if (clear_dir_entry(root_dir_inode, target) == -1)
+        return -1;
 
-    PANIC("TODO: tfs_unlink");
+    return 0;
 }
 
 int tfs_copy_from_external_fs(char const *source_path, char const *dest_path) {
