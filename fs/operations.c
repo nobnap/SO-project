@@ -243,16 +243,15 @@ int tfs_unlink(char const *target) {
 
 int tfs_copy_from_external_fs(char const *source_path, char const *dest_path) {
     char buffer[128];
-    memset(buffer,0,sizeof(buffer));
+    memset(buffer, 0, sizeof(buffer));
 
-    FILE * file = fopen(source_path, "r");
+    FILE *file = fopen(source_path, "r");
     if (file == NULL)
         return -1;
-    
-    int copy_fhandle = tfs_open(dest_path, TFS_O_TRUNC | TFS_O_CREAT);
-    if (copy_fhandle == -1)
-        return -1;
 
+    int fhandle = tfs_open(dest_path, TFS_O_TRUNC | TFS_O_CREAT);
+    if (fhandle == -1)
+        return -1;
 
     size_t bytes_read = 0;
     do {
@@ -263,12 +262,15 @@ int tfs_copy_from_external_fs(char const *source_path, char const *dest_path) {
 
         buffer[bytes_read] = '\0';
 
-        ssize_t bytes_written = tfs_write(copy_fhandle, buffer, bytes_read);
-        if (bytes_written < 0){
+        ssize_t bytes_written = tfs_write(fhandle, buffer, bytes_read);
+        if (bytes_written < 0) {
             return -1;
         }
 
     } while (bytes_read > 0);
+
+    fclose(file);
+    tfs_close(fhandle);
 
     return 0;
 }
