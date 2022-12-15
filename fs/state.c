@@ -204,6 +204,7 @@ int inode_create(inode_type i_type) {
     inode_t *inode = &inode_table[inumber];
     insert_delay(); // simulate storage access delay (to inode)
 
+    inode->i_links = 1;
     inode->i_node_type = i_type;
     switch (i_type) {
     case T_DIRECTORY: {

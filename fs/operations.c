@@ -150,8 +150,13 @@ int tfs_link(char const *target, char const *link_name) {
     ALWAYS_ASSERT(root_dir_inode != NULL,
                   "tfs_link: root dir inode must exist");
     int inum = tfs_lookup(target, root_dir_inode);
+    if (inum == -1) {
+        return -1;
+    }
 
     if (add_dir_entry(root_dir_inode, link_name + 1, inum) == -1) {
+        inode_t *inode = inode_get(inum);
+        inode->i_links++;
         return -1; // no space in directory
     }
 
@@ -170,6 +175,7 @@ int tfs_close(int fhandle) {
 }
 
 ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
+    // TODO: guarantee that write is aborted if max number of data blocks has been reached
     open_file_entry_t *file = get_open_file_entry(fhandle);
     if (file == NULL) {
         return -1;
@@ -245,9 +251,19 @@ int tfs_unlink(char const *target) {
     inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
     ALWAYS_ASSERT(root_dir_inode != NULL,
                   "tfs_unlink: root dir inode must exist");
-    target++;
-    if (clear_dir_entry(root_dir_inode, target) == -1)
+    
+    int inum = tfs_lookup(target, root_dir_inode);
+    if (inum == -1) {
         return -1;
+    }
+
+    if (clear_dir_entry(root_dir_inode, target+1) == -1)
+        return -1;
+
+    inode_t *inode = inode_get(inum);
+    inode->i_links--;
+    if (inode->i_links == 0)
+        inode_delete(inum);
 
     return 0;
 }
