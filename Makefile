@@ -15,7 +15,7 @@ INCLUDES := $(addprefix -I, $(INCLUDE_DIRS))
 SOURCES  := $(wildcard */*.c)
 HEADERS  := $(wildcard */*.h)
 OBJECTS  := $(SOURCES:.c=.o)
-TARGET_EXECS := $(patsubst %.c,%,$(wildcard tests/*.c))
+TARGET_EXECS := $(patsubst %.c,%,$(wildcard tests/*.c new_tests/*.c))
 
 # VPATH is a variable used by Makefile which finds *sources* and makes them available throughout the codebase
 # vpath %.h <DIR> tells make to look for header files in <DIR>

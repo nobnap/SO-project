@@ -1,6 +1,8 @@
-# ignores all files, then 'unignores' files with an extension
+# ignores all files, then 'unignores' files with an extension and folders
 *
 !*.*
+!*/
 
+*.o
 *.md
 .vscode

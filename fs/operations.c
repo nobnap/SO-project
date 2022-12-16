@@ -172,8 +172,6 @@ int tfs_close(int fhandle) {
 }
 
 ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
-    // TODO: guarantee that write is aborted if max number of data blocks has
-    // been reached
     open_file_entry_t *file = get_open_file_entry(fhandle);
     if (file == NULL) {
         return -1;
