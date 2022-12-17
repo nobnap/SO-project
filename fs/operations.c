@@ -133,12 +133,16 @@ int tfs_open(char const *name, tfs_file_mode_t mode) {
 }
 
 int tfs_sym_link(char const *target, char const *link_name) {
-    (void)target;
-    (void)link_name;
-    // ^ this is a trick to keep the compiler from complaining about unused
-    // variables. TODO: remove
+    int symHandle = tfs_open(link_name, TFS_O_CREAT);
+    if (symHandle == -1) {
+        return -1 // file creation failed
+    }
 
-    PANIC("TODO: tfs_sym_link");
+    ssize_t bytesWritten = tfs_write(symHandle, target, sizeof(target));
+    if (bytesWritten != sizeof(target)) {
+        return -1 // writing failed
+    }
+    return 0;
 }
 
 int tfs_link(char const *target, char const *link_name) {
