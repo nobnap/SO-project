@@ -91,6 +91,18 @@ int tfs_open(char const *name, tfs_file_mode_t mode) {
         ALWAYS_ASSERT(inode != NULL,
                       "tfs_open: directory files must have an inode");
 
+        // Handle opening of soft links
+        if (inode->i_node_type == T_SYMLINK) {
+            if (inode->i_size > 0) {
+                char *linked_name;
+                void* block = data_block_get(inode->i_data_block);
+                memcpy(linked_name, block, sizeof(block));
+                return tfs_open(linked_name, mode);
+            }
+            else {
+                return -1; // empty link
+            }
+        }
         // Truncate (if requested)
         if (mode & TFS_O_TRUNC) {
             if (inode->i_size > 0) {
@@ -133,15 +145,37 @@ int tfs_open(char const *name, tfs_file_mode_t mode) {
 }
 
 int tfs_sym_link(char const *target, char const *link_name) {
-    int symHandle = tfs_open(link_name, TFS_O_CREAT);
-    if (symHandle == -1) {
-        return -1; // file creation failed
+    inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
+    ALWAYS_ASSERT(root_dir_inode != NULL,
+                  "tfs_open: root dir inode must exist");
+
+    // Create symlink inode
+    int inum = inode_create(T_SYMLINK);
+    if (inum == -1) {
+        return -1; // no space in inode table
     }
 
-    ssize_t bytesWritten = tfs_write(symHandle, target, sizeof(target));
-    if (bytesWritten != sizeof(target)) {
-        return -1; // writing failed
+    // Add entry in the root directory
+    if (add_dir_entry(root_dir_inode, link_name, inum) == -1) {
+        inode_delete(inum);
+        return -1; // no space in directory
     }
+
+    // Writing the target file's path in the link file's data block
+    inode_t *inode = inode_get(inum);
+    if (inode->i_size == 0) {
+            // If empty file, allocate new block
+            int bnum = data_block_alloc();
+            if (bnum == -1) {
+                return -1; // no space
+            }
+
+            inode->i_data_block = bnum;
+        }
+    void *block = data_block_get(inode->i_data_block);
+    memcpy(block, target, sizeof(target));
+    inode->i_size += sizeof(target);
+
     return 0;
 }
 
