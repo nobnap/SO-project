@@ -150,6 +150,11 @@ int tfs_link(char const *target, char const *link_name) {
         return -1;
     }
 
+    // checks if  a file with the same name already exists
+    if (tfs_lookup(link_name, root_dir_inode) != -1) {
+        return -1;
+    }
+
     if (add_dir_entry(root_dir_inode, link_name + 1, inum) == -1) {
         return -1; // no space in directory
     }
