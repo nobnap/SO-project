@@ -152,7 +152,7 @@ int tfs_sym_link(char const *target, char const *link_name) {
         return -1;
     }
     
-    // checks if  a file with the same name already exists
+    // checks if a file with the same name already exists
     if (tfs_lookup(link_name, root_dir_inode) != -1) {
         return -1;
     }
@@ -196,7 +196,7 @@ int tfs_link(char const *target, char const *link_name) {
         return -1;
     }
 
-    // checks if  a file with the same name already exists
+    // checks if a file with the same name already exists
     if (tfs_lookup(link_name, root_dir_inode) != -1) {
         return -1;
     }
