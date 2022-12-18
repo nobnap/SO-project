@@ -94,10 +94,8 @@ int tfs_open(char const *name, tfs_file_mode_t mode) {
         // Handle opening of soft links
         if (inode->i_node_type == T_SYMLINK) {
             if (inode->i_size > 0) {
-                char *linked_name;
                 void* block = data_block_get(inode->i_data_block);
-                memcpy(linked_name, block, sizeof(block));
-                return tfs_open(linked_name, mode);
+                return tfs_open((char *)block, mode);
             }
             else {
                 return -1; // empty link
@@ -149,6 +147,16 @@ int tfs_sym_link(char const *target, char const *link_name) {
     ALWAYS_ASSERT(root_dir_inode != NULL,
                   "tfs_open: root dir inode must exist");
 
+    // checks if target file exists
+    if (tfs_lookup(target, root_dir_inode) == -1) {
+        return -1;
+    }
+    
+    // checks if  a file with the same name already exists
+    if (tfs_lookup(link_name, root_dir_inode) != -1) {
+        return -1;
+    }
+
     // Create symlink inode
     int inum = inode_create(T_SYMLINK);
     if (inum == -1) {
@@ -156,7 +164,7 @@ int tfs_sym_link(char const *target, char const *link_name) {
     }
 
     // Add entry in the root directory
-    if (add_dir_entry(root_dir_inode, link_name, inum) == -1) {
+    if (add_dir_entry(root_dir_inode, link_name+1, inum) == -1) {
         inode_delete(inum);
         return -1; // no space in directory
     }
@@ -173,8 +181,8 @@ int tfs_sym_link(char const *target, char const *link_name) {
             inode->i_data_block = bnum;
         }
     void *block = data_block_get(inode->i_data_block);
-    memcpy(block, target, sizeof(target));
-    inode->i_size += sizeof(target);
+    memcpy(block, target, strlen(target)+1);
+    inode->i_size += strlen(target)+1; // FIXME: maybe not strlen but not sure
 
     return 0;
 }
@@ -193,11 +201,15 @@ int tfs_link(char const *target, char const *link_name) {
         return -1;
     }
 
+    inode_t *inode = inode_get(inum);
+    if (inode->i_node_type == T_SYMLINK) {
+        return -1;
+    }
+
     if (add_dir_entry(root_dir_inode, link_name + 1, inum) == -1) {
         return -1; // no space in directory
     }
 
-    inode_t *inode = inode_get(inum);
     inode->i_links++;
 
     return 0;

@@ -26,7 +26,7 @@ int main() {
     }
 
     // Attempts to create hard link named 'f2'
-    assert(tfs_symlink(target, repeated_name) == -1);
+    assert(tfs_sym_link(target, repeated_name) == -1);
 
     assert(tfs_destroy() != -1);
 
