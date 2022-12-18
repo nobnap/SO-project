@@ -1,0 +1,32 @@
+TESTS:
+(Testes com ! antes ainda não estão funcionais)
+
+copy from external:
+	- copia ficheiro vazio
+	- source não existe
+	- copia ficheiro grande
+	- copia ficheiro duas vezes e vê se dá overwrite e não append
+	- NEW: copia ficheiro maior do que a capacidade do tfs
+
+hard-links:
+	- escreve no hard-link e no ficheiro e verifica se ambos se alteram
+	- cria links em cadeia e testa se escreve em todos
+	- tenta criar hard-link de um soft-link
+	- NEW: tenta criar hard-link com nome de um ficheiro já existente
+	- !NEW: tenta dar unlink de um ficheiro aberto (UNDEFINED BEHAVIOUR)
+	- NEW: tenta criar hard-link de um ficheiro inexistente
+	- NEW: apaga ficheiro de qual foi criado hard-link, verifica se o hard-link funciona
+
+soft-links:
+	- escreve no soft-link e no ficheiro e verifica se ambos se alteram
+	- tenta abrir symlink de ficheiro apagado e depois cria novo ficheiro com o mesmo nome(deve conseguir abrir)
+	- NEW: tenta criar soft-link com nome de ficheiro já existente
+	- NEW: tenta abrir ficheiro inexistente a partir de soft-link com flag TFS_O_CREAT, o que deve criar um novo
+	- NEW: tenta fazer tfs_copy_from_external_fs para um soft-link
+
+limites de memória e possíveis bugs:
+	- cria número máximo de inodes e verifica que não cria mais blocos que o possível (4 inodes e 2 blocos sendo que um de cada é a diretoria)
+	- apaga ficheiro e cria novo com mesmo nome, verificando que não tem o conteúdo do outro
+
+threads:
+	- !NEW: tenta ler e escrever num ficheiro simultaneamente
