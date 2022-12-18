@@ -5,8 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 #include "betterassert.h"
+
+static pthread_mutex_t operations_mutex;
 
 tfs_params tfs_default_params() {
     tfs_params params = {
@@ -30,6 +33,8 @@ int tfs_init(tfs_params const *params_ptr) {
         return -1;
     }
 
+    pthread_mutex_init(&operations_mutex, NULL);
+
     // create root inode
     int root = inode_create(T_DIRECTORY);
     if (root != ROOT_DIR_INUM) {
@@ -43,6 +48,8 @@ int tfs_destroy() {
     if (state_destroy() != 0) {
         return -1;
     }
+
+    pthread_mutex_destroy(&operations_mutex);
     return 0;
 }
 
@@ -82,11 +89,13 @@ int tfs_open(char const *name, tfs_file_mode_t mode) {
     inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
     ALWAYS_ASSERT(root_dir_inode != NULL,
                   "tfs_open: root dir inode must exist");
+    pthread_mutex_lock(&operations_mutex);
     int inum = tfs_lookup(name, root_dir_inode);
     size_t offset;
 
     if (inum >= 0) {
         // The file already exists
+        pthread_mutex_unlock(&operations_mutex);
         inode_t *inode = inode_get(inum);
         ALWAYS_ASSERT(inode != NULL,
                       "tfs_open: directory files must have an inode");
@@ -119,17 +128,21 @@ int tfs_open(char const *name, tfs_file_mode_t mode) {
         // Create inode
         inum = inode_create(T_FILE);
         if (inum == -1) {
+            pthread_mutex_unlock(&operations_mutex);
             return -1; // no space in inode table
         }
 
         // Add entry in the root directory
         if (add_dir_entry(root_dir_inode, name + 1, inum) == -1) {
             inode_delete(inum);
+            pthread_mutex_unlock(&operations_mutex);
             return -1; // no space in directory
         }
 
+        pthread_mutex_unlock(&operations_mutex);
         offset = 0;
     } else {
+        pthread_mutex_unlock(&operations_mutex);
         return -1;
     }
 
@@ -147,27 +160,34 @@ int tfs_sym_link(char const *target, char const *link_name) {
     ALWAYS_ASSERT(root_dir_inode != NULL,
                   "tfs_open: root dir inode must exist");
 
+    pthread_mutex_lock(&operations_mutex);
+
     // checks if target file exists
     if (tfs_lookup(target, root_dir_inode) == -1) {
+        pthread_mutex_unlock(&operations_mutex);
         return -1;
     }
     
     // checks if a file with the same name already exists
     if (tfs_lookup(link_name, root_dir_inode) != -1) {
+        pthread_mutex_unlock(&operations_mutex);
         return -1;
     }
 
     // Create symlink inode
     int inum = inode_create(T_SYMLINK);
     if (inum == -1) {
+        pthread_mutex_unlock(&operations_mutex);
         return -1; // no space in inode table
     }
 
     // Add entry in the root directory
     if (add_dir_entry(root_dir_inode, link_name+1, inum) == -1) {
         inode_delete(inum);
+        pthread_mutex_unlock(&operations_mutex);
         return -1; // no space in directory
     }
+    pthread_mutex_unlock(&operations_mutex);
 
     // Writing the target file's path in the link file's data block
     inode_t *inode = inode_get(inum);
@@ -191,27 +211,35 @@ int tfs_link(char const *target, char const *link_name) {
     inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
     ALWAYS_ASSERT(root_dir_inode != NULL,
                   "tfs_link: root dir inode must exist");
+
+    pthread_mutex_lock(&operations_mutex);
+
     int inum = tfs_lookup(target, root_dir_inode);
     if (inum == -1) {
+        pthread_mutex_unlock(&operations_mutex);
         return -1;
     }
 
     // checks if a file with the same name already exists
     if (tfs_lookup(link_name, root_dir_inode) != -1) {
+        pthread_mutex_unlock(&operations_mutex);
         return -1;
     }
 
     inode_t *inode = inode_get(inum);
     if (inode->i_node_type == T_SYMLINK) {
+        pthread_mutex_unlock(&operations_mutex);
         return -1;
     }
 
     if (add_dir_entry(root_dir_inode, link_name + 1, inum) == -1) {
+        pthread_mutex_unlock(&operations_mutex);
         return -1; // no space in directory
     }
 
     inode->i_links++;
 
+    pthread_mutex_unlock(&operations_mutex);
     return 0;
 }
 

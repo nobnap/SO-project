@@ -170,7 +170,15 @@ int state_destroy(void) {
     open_file_table = NULL;
     free_open_file_entries = NULL;
 
+    for(int i = 0; i < INODE_TABLE_SIZE; i++) {
+        pthread_mutex_destroy(&inode_locks[i]);
+    }
     free(inode_locks);
+
+    pthread_mutex_destroy(&inode_table_lock);
+    pthread_mutex_destroy(&dir_table_lock);
+    pthread_mutex_destroy(&file_table_lock);
+    pthread_mutex_destroy(&data_blocks_lock);
 
     return 0;
 }
@@ -305,7 +313,7 @@ void inode_delete(int inumber) {
     if (inode_table[inumber].i_size > 0) {
         data_block_free(inode_table[inumber].i_data_block);
     }
-    
+
     freeinode_ts[inumber] = FREE;
     pthread_rwlock_unlock(&inode_locks[inumber]);
 }
