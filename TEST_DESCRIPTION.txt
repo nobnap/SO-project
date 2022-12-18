@@ -30,3 +30,4 @@ limites de memória e possíveis bugs:
 
 threads:
 	- !NEW: tenta ler e escrever num ficheiro simultaneamente
+	- NEW: tenta alocar inodes, data blocks e open file handles simultaneamente

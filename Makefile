@@ -42,6 +42,11 @@ else
   CFLAGS += -O3
 endif
 
+# optional thread sanitation symbols: run make THREAD=no to deactivate them
+ifneq ($(strip $(THREAD)), no)
+  CFLAGS += -pthread -fsanitize=thread
+endif
+
 # convenience variables for extending compiler options (e.g. to add sanitizers)
 CFLAGS += $(EXTRA_CFLAGS)
 LDFLAGS += $(EXTRA_LDFLAGS)
