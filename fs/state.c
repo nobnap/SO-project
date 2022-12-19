@@ -114,7 +114,7 @@ int state_init(tfs_params params) {
     open_file_table = malloc(MAX_OPEN_FILES * sizeof(open_file_entry_t));
     free_open_file_entries =
         malloc(MAX_OPEN_FILES * sizeof(allocation_state_t));
-    inode_locks = (pthread_mutex_t*) malloc(INODE_TABLE_SIZE * sizeof(pthread_mutex_t));
+    inode_locks = (pthread_rwlock_t*) malloc(INODE_TABLE_SIZE * sizeof(pthread_rwlock_t));
     pthread_rwlock_init(&inode_table_lock, NULL);
     pthread_mutex_init(&data_blocks_lock, NULL);
     pthread_mutex_init(&file_table_lock, NULL);
@@ -171,11 +171,11 @@ int state_destroy(void) {
     free_open_file_entries = NULL;
 
     for(int i = 0; i < INODE_TABLE_SIZE; i++) {
-        pthread_mutex_destroy(&inode_locks[i]);
+        pthread_rwlock_destroy(&inode_locks[i]);
     }
     free(inode_locks);
 
-    pthread_mutex_destroy(&inode_table_lock);
+    pthread_rwlock_destroy(&inode_table_lock);
     pthread_mutex_destroy(&dir_table_lock);
     pthread_mutex_destroy(&file_table_lock);
     pthread_mutex_destroy(&data_blocks_lock);
