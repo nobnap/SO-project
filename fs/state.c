@@ -211,7 +211,7 @@ static int inode_alloc(void) {
         if (freeinode_ts[inumber] == FREE) {
             //  Found a free entry, so takes it for the new inode
             freeinode_ts[inumber] = TAKEN;
-            
+
             pthread_mutex_unlock(&inode_table_lock);
             return (int)inumber;
         }
@@ -247,7 +247,7 @@ int inode_create(inode_type i_type) {
 
     inode_t *inode = &inode_table[inumber];
     insert_delay(); // simulate storage access delay (to inode)
-    
+
     pthread_rwlock_wrlock(&inode->i_lock);
     inode->i_links = 1;
     inode->i_node_type = i_type;
@@ -600,4 +600,21 @@ open_file_entry_t *get_open_file_entry(int fhandle) {
     }
 
     return &open_file_table[fhandle];
+}
+
+/**
+ * Count how many open file entries are associated with a given i-number.
+ * 
+ * Input:
+ *  - inumber: i-number
+ * 
+ * Returns integer amount of open file entries associated with a given i-number.
+ */
+int count_open_file_entries_associated_with_inum(int inumber) {
+    int count = 0;
+    for(int i = 0; i < MAX_OPEN_FILES; i++) {
+        open_file_entry_t* pointer = get_open_file_entry(i);
+        if (pointer != NULL && pointer->of_inumber == inumber) count++;
+    }
+    return count;
 }

@@ -343,10 +343,14 @@ int tfs_unlink(char const *target) {
         return -1;
     }
 
+    inode_t *inode = inode_get(inum);
+    if(inode->i_links == 1 && count_open_file_entries_associated_with_inum(inum) == 1)
+        return -1; // cannot proceed if the last link is still open
+
+
     if (clear_dir_entry(root_dir_inode, target + 1) == -1)
         return -1;
-
-    inode_t *inode = inode_get(inum);
+    
     pthread_rwlock_wrlock(&inode->i_lock);
     inode->i_links--;
     pthread_rwlock_unlock(&inode->i_lock);
