@@ -18,7 +18,7 @@ static tfs_params fs_params;
 // Inode table
 static inode_t *inode_table;
 static allocation_state_t *freeinode_ts;
-static pthread_rwlock_t inode_table_lock;
+static pthread_mutex_t inode_table_lock;
 static pthread_rwlock_t *inode_locks;
 
 // Data blocks
@@ -115,25 +115,25 @@ int state_init(tfs_params params) {
     free_open_file_entries =
         malloc(MAX_OPEN_FILES * sizeof(allocation_state_t));
     inode_locks = (pthread_rwlock_t*) malloc(INODE_TABLE_SIZE * sizeof(pthread_rwlock_t));
-    pthread_rwlock_init(&inode_table_lock, NULL);
-    pthread_mutex_init(&data_blocks_lock, NULL);
-    pthread_mutex_init(&file_table_lock, NULL);
-    pthread_mutex_init(&dir_table_lock, NULL);
-    for (int i = 0; i < INODE_TABLE_SIZE; i++) {
-        pthread_rwlock_init(&inode_locks[i], NULL);
-    }
-
 
     if (!inode_table || !freeinode_ts || !fs_data || !free_blocks ||
-        !open_file_table || !free_open_file_entries) {
+        !open_file_table || !free_open_file_entries || !inode_locks) {
         return -1; // allocation failed
     }
 
-    pthread_rwlock_wrlock(&inode_table_lock);
+    pthread_mutex_init(&inode_table_lock, NULL);
+    pthread_mutex_init(&data_blocks_lock, NULL);
+    pthread_mutex_init(&file_table_lock, NULL);
+    pthread_mutex_init(&dir_table_lock, NULL);
+    for (size_t i = 0; i < INODE_TABLE_SIZE; i++) {
+        pthread_rwlock_init(&inode_locks[i], NULL);
+    }
+
+    pthread_mutex_lock(&inode_table_lock);
     for (size_t i = 0; i < INODE_TABLE_SIZE; i++) {
         freeinode_ts[i] = FREE;
     }
-    pthread_rwlock_unlock(&inode_table_lock);
+    pthread_mutex_unlock(&inode_table_lock);
 
     pthread_mutex_lock(&data_blocks_lock);
     for (size_t i = 0; i < DATA_BLOCKS; i++) {
@@ -170,12 +170,12 @@ int state_destroy(void) {
     open_file_table = NULL;
     free_open_file_entries = NULL;
 
-    for(int i = 0; i < INODE_TABLE_SIZE; i++) {
+    for(size_t i = 0; i < INODE_TABLE_SIZE; i++) {
         pthread_rwlock_destroy(&inode_locks[i]);
     }
     free(inode_locks);
 
-    pthread_rwlock_destroy(&inode_table_lock);
+    pthread_mutex_destroy(&inode_table_lock);
     pthread_mutex_destroy(&dir_table_lock);
     pthread_mutex_destroy(&file_table_lock);
     pthread_mutex_destroy(&data_blocks_lock);
@@ -193,7 +193,7 @@ int state_destroy(void) {
  *   - No free slots in inode table.
  */
 static int inode_alloc(void) {
-    pthread_rwlock_rdlock(&inode_table_lock);
+    pthread_mutex_lock(&inode_table_lock);
     for (size_t inumber = 0; inumber < INODE_TABLE_SIZE; inumber++) {
         if ((inumber * sizeof(allocation_state_t) % BLOCK_SIZE) == 0) {
             insert_delay(); // simulate storage access delay (to freeinode_ts)
@@ -202,16 +202,14 @@ static int inode_alloc(void) {
         // Finds first free entry in inode table
         if (freeinode_ts[inumber] == FREE) {
             //  Found a free entry, so takes it for the new inode
-            pthread_rwlock_wrlock(&inode_locks[inumber]);
             freeinode_ts[inumber] = TAKEN;
-
-            pthread_rwlock_unlock(&inode_locks[inumber]);
-            pthread_rwlock_unlock(&inode_table_lock);
+            
+            pthread_mutex_unlock(&inode_table_lock);
             return (int)inumber;
         }
     }
 
-    pthread_rwlock_unlock(&inode_table_lock);
+    pthread_mutex_unlock(&inode_table_lock);
     // no free inodes
     return -1;
 }
@@ -239,11 +237,9 @@ int inode_create(inode_type i_type) {
         return -1; // no free slots in inode table
     }
 
-    pthread_rwlock_rdlock(&inode_table_lock);
     inode_t *inode = &inode_table[inumber];
     insert_delay(); // simulate storage access delay (to inode)
-    pthread_rwlock_unlock(&inode_table_lock);
-
+    
     pthread_rwlock_wrlock(&inode_locks[inumber]);
     inode->i_links = 1;
     inode->i_node_type = i_type;
@@ -314,7 +310,10 @@ void inode_delete(int inumber) {
         data_block_free(inode_table[inumber].i_data_block);
     }
 
+    pthread_mutex_lock(&inode_table_lock);
     freeinode_ts[inumber] = FREE;
+    pthread_mutex_unlock(&inode_table_lock);
+
     pthread_rwlock_unlock(&inode_locks[inumber]);
 }
 
