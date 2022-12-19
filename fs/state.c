@@ -161,7 +161,7 @@ int state_init(tfs_params params) {
 int state_destroy(void) {
     for(size_t i = 0; i < INODE_TABLE_SIZE; i++) {
         if (freeinode_ts[i] == TAKEN)
-            pthread_mutex_destroy(&inode_table[i].i_lock);
+            pthread_rwlock_destroy(&inode_table[i].i_lock);
     }
 
     for(size_t i = 0; i < MAX_OPEN_FILES; i++) {
