@@ -259,9 +259,11 @@ ssize_t tfs_write(int fhandle, void const *buffer, size_t to_write) {
 
     // Determine how many bytes to write
     size_t block_size = state_block_size();
+    pthread_rwlock_rdlock(&file->of_lock);
     if (to_write + file->of_offset > block_size) {
         to_write = block_size - file->of_offset;
     }
+    pthread_rwlock_unlock(&file->of_lock);
 
     if (to_write > 0) {
         pthread_rwlock_wrlock(&inode->i_lock);
