@@ -551,8 +551,10 @@ int add_to_open_file_table(int inumber, size_t offset) {
     for (int i = 0; i < MAX_OPEN_FILES; i++) {
         if (free_open_file_entries[i] == FREE) {
             free_open_file_entries[i] = TAKEN;
+            pthread_rwlock_wrlock(&open_file_table[i].of_lock);
             open_file_table[i].of_inumber = inumber;
             open_file_table[i].of_offset = offset;
+            pthread_rwlock_unlock(&open_file_table[i].of_lock);
 
             pthread_mutex_unlock(&file_table_lock);
             return i;

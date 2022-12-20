@@ -30,11 +30,10 @@ limites de memória e possíveis bugs:
 
 threads:
 	- !NEW: tenta ler e escrever no mesmo ficheiro (mesmo open file) simultaneamente MJ
-	- !NEW: tenta ler e escrever no mesmo ficheiro (open file diferentes) simultaneamente M
+	- NEW: tenta ler e escrever no mesmo ficheiro (open file diferentes) simultaneamente M
 	- NEW: tenta alocar inodes, data blocks e open file handles simultaneamente
 	- !NEW: mesmo que acima mas stress test MJ
-	- !NEW: tenta ler e escrever no mesmo ficheiro (open file diferentes) simultaneamente M
 	- !NEW: tenta ler vários ficheiros do fs externo simultaneamente MJ
-	- !NEW: tenta criar o mesmo ficheiro simultaneamente M
+	- NEW: tenta criar o mesmo ficheiro simultaneamente M
 	- !NEW: tenta ler o mesmo ficheiro em multiplas threads(open files iguais) MJ
-	- !NEW: fazer vários soft-links para o mesmo ficheiro simultaneamente M
+	- NEW: fazer vários soft-links para o mesmo ficheiro simultaneamente M
