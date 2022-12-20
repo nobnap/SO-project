@@ -69,7 +69,9 @@ static bool valid_pathname(char const *name) {
  * Returns the inumber of the file, -1 if unsuccessful.
  */
 static int tfs_lookup(char const *name, inode_t const *root_inode) {
-    // TODO: assert that root_inode is the root directory
+    inode_t *root_dir_inode = inode_get(ROOT_DIR_INUM);
+    ALWAYS_ASSERT(root_inode == root_dir_inode,
+                  "tfs_lookup: wrong root inode");
     if (!valid_pathname(name)) {
         return -1;
     }
@@ -174,6 +176,11 @@ int tfs_sym_link(char const *target, char const *link_name) {
         return -1;
     }
 
+    // Checks if new link name is valid
+    if (!valid_pathname(link_name)) {
+        return -1;
+    }
+
     // Create symlink inode
     int inum = inode_create(T_SYMLINK);
     if (inum == -1) {
@@ -200,7 +207,7 @@ int tfs_sym_link(char const *target, char const *link_name) {
         }
     void *block = data_block_get(inode->i_data_block);
     memcpy(block, target, strlen(target)+1);
-    inode->i_size += strlen(target)+1; // FIXME: maybe not strlen but not sure
+    inode->i_size += strlen(target)+1;
 
     pthread_rwlock_unlock(&inode->i_lock);
     return 0;
@@ -218,6 +225,11 @@ int tfs_link(char const *target, char const *link_name) {
 
     // checks if a file with the same name already exists
     if (tfs_lookup(link_name, root_dir_inode) != -1) {
+        return -1;
+    }
+
+    // Checks if new link name is valid
+    if (!valid_pathname(link_name)) {
         return -1;
     }
 
@@ -312,7 +324,6 @@ ssize_t tfs_read(int fhandle, void *buffer, size_t len) {
 
     // Determine how many bytes to read
     size_t to_read = inode->i_size - file->of_offset;
-    // TODO: if something fails, check this
     if (to_read > len) {
         to_read = len;
     }
