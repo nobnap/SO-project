@@ -1,5 +1,4 @@
 TESTS:
-(Testes com ! antes ainda não estão funcionais)
 
 copy from external:
 	- copia ficheiro vazio
@@ -13,7 +12,7 @@ hard-links:
 	- cria links em cadeia e testa se escreve em todos
 	- tenta criar hard-link de um soft-link
 	- NEW: tenta criar hard-link com nome de um ficheiro já existente
-	- !NEW: tenta dar unlink de um ficheiro aberto (UNDEFINED BEHAVIOUR)
+	- NEW: tenta dar unlink de um ficheiro aberto (UNDEFINED BEHAVIOUR)
 	- NEW: tenta criar hard-link de um ficheiro inexistente
 	- NEW: apaga ficheiro de qual foi criado hard-link, verifica se o hard-link funciona
 
@@ -29,10 +28,10 @@ limites de memória e possíveis bugs:
 	- apaga ficheiro e cria novo com mesmo nome, verificando que não tem o conteúdo do outro
 
 threads:
-	- NEW: tenta ler e escrever no mesmo ficheiro (mesmo open file) simultaneamente MJ
-	- NEW: tenta ler e escrever no mesmo ficheiro (open file diferentes) simultaneamente M
+	- NEW: tenta ler e escrever no mesmo ficheiro (mesmo open file) simultaneamente 
+	- NEW: tenta ler e escrever no mesmo ficheiro (open file diferentes) simultaneamente 
 	- NEW: tenta alocar inodes, data blocks e open file handles simultaneamente
-	- NEW: tenta ler vários ficheiros do fs externo simultaneamente MJ
-	- NEW: tenta criar o mesmo ficheiro simultaneamente M
-	- NEW: tenta ler o mesmo ficheiro em multiplas threads(open files iguais) MJ
-	- NEW: fazer vários soft-links para o mesmo ficheiro simultaneamente M
+	- NEW: tenta ler vários ficheiros do fs externo simultaneamente 
+	- NEW: tenta criar o mesmo ficheiro simultaneamente 
+	- NEW: tenta ler o mesmo ficheiro em multiplas threads(open files iguais) 
+	- NEW: fazer vários soft-links para o mesmo ficheiro simultaneamente 
